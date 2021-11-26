@@ -47,11 +47,14 @@ public class AdminController {
     @PutMapping()
     public User updateUser(@RequestBody User user) {
         userService.updateUser(user);
+        System.out.println(userService.getUserById(user.getId()));
         return userService.getUserById(user.getId());
     }
 
     @DeleteMapping("{id}")
-    public void deleteUser(@PathVariable long id) {
+    public User deleteUser(@PathVariable long id) {
+        User user = userService.getUserById(id);
         userService.delete(id);
+        return user;
     }
 }

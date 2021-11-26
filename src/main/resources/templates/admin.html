@@ -153,11 +153,6 @@
                         </tbody>
                     </table>
 
-
-
-
-                        <!--</tbody>
-                    </table>-->
                 </div>
                 <div class="tab-pane fade" id="new" role="tabpanel" aria-labelledby="new-tab">
                     <h5 class="card-header">Add new user</h5>
@@ -186,244 +181,189 @@
 
 <script src="https://code.jquery.com/jquery-3.3.1.min.js"
         crossorigin="anonymous"></script>
-<script>let roleList = [];
+<script>
+    let roleList = [];
+    getAllUsers();
 
-
-
-getAllUsers();
-
-function getAllUsers() {
-
-    $('#tableAllUsers').empty();
-
-    fetch("http://localhost:8080/admin/allUsers").then(res=>{
-        res.json().then(data=>{
-            data.forEach((user)=>{
-                $('#tableAllUsers').append(createRows(user));
+    function getAllUsers() {
+        $('#tableAllUsers').empty();
+        fetch("http://localhost:8080/admin/allUsers").then(res=>{
+            res.json().then(data=>{
+                data.forEach((user)=>{
+                    $('#tableAllUsers').append(createRows(user));
+                })
             })
         })
-    })
-
-    fetch("http://localhost:8080/admin/authorities").then(roles=>{
-        roles.json().then(data=>{
-            roleList = data;
+        fetch("http://localhost:8080/admin/authorities").then(roles=>{
+            roles.json().then(data=>{
+                roleList = data;
+            })
         })
+    }
+
+    function createRows(user) {
+        let user_data = '<tr id=' + user.id + '>';
+        user_data += '<td>' + user.id + '</td>';
+        user_data += '<td>' + user.username + '</td>';
+        user_data += '<td>' + user.email + '</td>';
+        user_data += '<td>';
+        let roles = user.roles;
+        for (let userRoles of roles) {
+            user_data += userRoles.role.toString().replace('ROLE_', '') + ' '
+        }
+        user_data += '</td>' +
+            '<td>' + '<input id="btnEdit" value="Edit" type="button" ' +
+            'class="btn-info btn edit-btn" data-toggle="modal" data-target="#editModal" ' +
+            'data-id="' + user.id + '">' + '</td>' +
+
+            '<td>' + '<input id="btnDelete" value="Delete" type="button" class="btn btn-danger del-btn" ' +
+            'data-toggle="modal" data-target="#deleteModal" data-id=" ' + user.id + ' ">' + '</td>';
+        user_data += '</tr>';
+
+        return user_data;
+    }
+
+    $(document).on('click', '.edit-btn', function () {
+        const user_id = $(this).attr('data-id');
+        getEditUser(user_id);
+    });
+
+
+    $('#editButton').on('click', (e) => {
+        e.preventDefault();
+        editUser();
+    });
+
+    $(document).on('click', '.del-btn', function () {
+        const user_id = $(this).attr('data-id');
+        getDeleteUser(user_id);
+    });
+
+    $('#deleteButton').on('click', () => {
+        deleteUser();
+    });
+
+    function getUserRolesForEdit() {
+        let allRoles = [];
+        $.each($("select[name='editRoles'] option:selected"), function () {
+            let role = {};
+            role.id = $(this).attr('id');
+            role.role = $(this).attr('name');
+            role.authority = $(this).attr('name');
+            allRoles.push(role);
+        });
+        return allRoles;
+    }
+
+    function getUserRolesForAdd() {
+        let allRoles = [];
+        $.each($("select[name='selectRoles'] option:selected"), function () {
+            let role = {};
+            role.id = $(this).attr('id');
+            role.role = $(this).attr('name');
+            role.authority = $(this).attr('name');
+            allRoles.push(role);
+        });
+        return allRoles;
+    }
+
+
+    $('#new-tab').on('click', () => {
+        $('#userName').empty().val('')
+        $('#email').empty().val('')
+        $('#password').empty().val('')
+        $('#addRole').empty().val('')
+        for (let allRoles of roleList) {
+            $('#selectRoles').append('<option id="' + allRoles.id +'"  name="' + allRoles.role + '" >' +
+                allRoles.role + '</option>')
+        }
     })
 
-    /*let rows = '';
-    $.getJSON("http://localhost:8080/admin/allUsers", function (data) {
 
-        $.each(data, function (key, user) {
-            rows += createRows(user);
+    $("#addNewUserButton").on('click', () => {
+        addUser();
+    });
+
+    async function addUser()  {
+        let newUser = {
+            username: $('#userName').val(),
+            password: $('#password').val(),
+            email: $('#email').val(),
+            roles: getUserRolesForAdd()
+        }
+        let response =  await fetch('http://localhost:8080/admin', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json;charset=utf-8'
+            },
+            body: JSON.stringify(newUser)
         });
-        $('#tableAllUsers').append(rows);
+        let addedUser = await response.json();
+        $('#admin-tab').tab('show');
+        $('#tableAllUsers').append(createRows(addedUser));
+    }
 
+    async function deleteUser()  {
+        let userId = $('#deleteId').val();
+        let response =  await fetch('http://localhost:8080/admin/' + userId, {
+            method: 'DELETE',
+        });
+        let deleteUser = await response.json();
+        $('#tableAllUsers').find('#' + deleteUser.id).remove();
+        $('#deleteModal').modal('hide');
+    }
 
-        $.ajax({
-            url: '/admin/authorities',
+    async function getDeleteUser(user_id)  {
+        let response =  await fetch('http://localhost:8080/admin/' + user_id, {
             method: 'GET',
-            dataType: 'json',
-            success: function (roles) {
-                roleList = roles;
-            }
         });
-    });*/
-}
-
-function createRows(user) {
-
-    let user_data = '<tr id=' + user.id + '>';
-    user_data += '<td>' + user.id + '</td>';
-    user_data += '<td>' + user.username + '</td>';
-    user_data += '<td>' + user.email + '</td>';
-    user_data += '<td>';
-
-    let roles = user.roles;
-    for (let userRoles of roles) {
-        user_data += userRoles.role.toString().replace('ROLE_', '') + ' '
+        let user = await response.json();
+        $('#deleteId').val(user.id);
+        $('#deleteName').val(user.username);
+        $('#deletePassword').val(user.password);
+        $('#deleteEmail').val(user.email);
+        $('#deleteRole').empty();
+        for (let allRoles of user.roles) {
+            $('#deleteRole').append('<option id="' + allRoles.id +'"  name="' + allRoles.role + '" >' +
+                allRoles.role + '</option>')
+        }
     }
 
-    user_data += '</td>' +
-        '<td>' + '<input id="btnEdit" value="Edit" type="button" ' +
-        'class="btn-info btn edit-btn" data-toggle="modal" data-target="#editModal" ' +
-        'data-id="' + user.id + '">' + '</td>' +
-
-        '<td>' + '<input id="btnDelete" value="Delete" type="button" class="btn btn-danger del-btn" ' +
-        'data-toggle="modal" data-target="#deleteModal" data-id=" ' + user.id + ' ">' + '</td>';
-    user_data += '</tr>';
-
-    return user_data;
-}
-
-function getUserRolesForEdit() {
-    let allRoles = [];
-    $.each($("select[name='editRoles'] option:selected"), function () {
-        let role = {};
-        role.id = $(this).attr('id');
-        role.name = $(this).attr('name');
-        allRoles.push(role);
-    });
-    return allRoles;
-}
-
-$(document).on('click', '.edit-btn', function () {
-    const user_id = $(this).attr('data-id');
-    $.ajax({
-        url: '/admin/' + user_id,
-        method: 'GET',
-        dataType: 'json',
-        success: function (user) {
-            $('#editId').val(user.id);
-            $('#editName').val(user.username);
-            $('#editPassword').val(user.password);
-            $('#editEmail').val(user.email);
-            $('#editRole').empty();
-            for (let allRoles of roleList) {
-                $('#editRole').append('<option id="' + allRoles.id +'"  name="' + allRoles.role + '" >' +
-                    allRoles.role + '</option>')
-            }
+    async function editUser()  {
+        let editUser = {
+            id: $("input[name='id']").val(),
+            username: $("input[name='username']").val(),
+            password: $("input[name='password']").val(),
+            email: $("input[name='email']").val(),
+            roles: getUserRolesForEdit()
         }
-    });
-});
-
-
-$('#editButton').on('click', (e) => {
-    e.preventDefault();
-
-    let userEditId = $('#editId').val();
-
-    let editUser = {
-        id: $("input[name='id']").val(),
-        username: $("input[name='username']").val(),
-        password: $("input[name='password']").val(),
-        email: $("input[name='email']").val(),
-        roles: getUserRolesForEdit()
+        let response =  await fetch('http://localhost:8080/admin', {
+            method: 'PUT',
+            headers: {
+                'Content-Type': 'application/json;charset=utf-8'
+            },
+            body: JSON.stringify(editUser)
+        });
+        let newEditUser = await response.json();
+        // $('#tableAllUsers').find('#' + newEditUser.id).replaceWith(newEditUser);
+        getAllUsers();
     }
 
-    $.ajax({
-        url: '/admin',
-        method: 'PUT',
-        contentType: 'application/json; charset=utf-8',
-        dataType: 'json',
-        data: JSON.stringify(editUser),
-        success: (data) => {
-            let newRow = createRows(data);
-            $('#tableAllUsers').find('#' + userEditId).replaceWith(newRow);
-            $('#editModal').modal('hide'); //или в button добавить data-dismiss="modal"
-        },
-        error: () => {
-            console.log("error editUser")
+    async function getEditUser(user_id)  {
+        let response =  await fetch('http://localhost:8080/admin/' + user_id, {
+            method: 'GET',
+        });
+        let user = await response.json();
+        $('#editId').val(user.id);
+        $('#editName').val(user.username);
+        $('#editPassword').val(user.password);
+        $('#editEmail').val(user.email);
+        $('#editRole').empty();
+        for (let allRoles of roleList) {
+            $('#editRole').append('<option id="' + allRoles.id +'"  name="' + allRoles.role + '" >' +
+                allRoles.role + '</option>')
         }
-    });
-});
-
-$(document).on('click', '.del-btn', function () {
-    const user_id = $(this).attr('data-id');
-    $.ajax({
-        url: '/admin/' + user_id,
-        method: 'GET',
-        dataType: 'json',
-        success: function (user) {
-            $('#deleteId').val(user.id);
-            $('#deleteName').val(user.username);
-            $('#deletePassword').val(user.password);
-            $('#deleteEmail').val(user.email);
-
-            $('#deleteRole').empty();
-            for (let allRoles of user.roles) {
-                $('#deleteRole').append('<option id="' + allRoles.id +'"  name="' + allRoles.role + '" >' +
-                    allRoles.role + '</option>')
-            }
-        }
-    });
-});
-
-$('#deleteButton').on('click', (e) => {
-    e.preventDefault();
-    let userId = $('#deleteId').val();
-    $.ajax({
-        url: '/admin/' + userId,
-        method: 'DELETE',
-        success: function () {
-            $('#tableAllUsers').find('#' + userId).remove();
-            $('#deleteModal').modal('hide');
-        },
-        error: () => {
-            console.log("error delete user")
-        }
-    });
-});
-
-function getUserRolesForAdd() {
-    let allRoles = [];
-    $.each($("select[name='selectRoles'] option:selected"), function () {
-        let role = {};
-        role.id = $(this).attr('id');
-        role.role = $(this).attr('name');
-        role.authority = $(this).attr('name');
-        allRoles.push(role);
-    });
-    return allRoles;
-}
-
-
-$('#new-tab').on('click', () => {
-    $('#userName').empty().val('')
-    $('#email').empty().val('')
-    $('#password').empty().val('')
-    $('#addRole').empty().val('')
-    for (let allRoles of roleList) {
-        $('#selectRoles').append('<option id="' + allRoles.id +'"  name="' + allRoles.role + '" >' +
-            allRoles.role + '</option>')
     }
-})
-
-
-$("#addNewUserButton").on('click', () => {
-
-addUser();
-    /*$.ajax({
-        url: '/admin/',
-        method: 'POST',
-        contentType: 'application/json; charset=utf-8',
-        dataType: 'json',
-        data: JSON.stringify(newUser),
-
-        success: function () {
-            // $('#tableAllUsers').append(createRows(newUser));
-            getAllUsers();
-            $('#admin-tab').tab('show');
-        },
-        error: function () {
-            alert('error addUser')
-        }
-    });*/
-
-
-
-});
-
-async function addUser()  {
-    let newUser = {
-        username: $('#userName').val(),
-        password: $('#password').val(),
-        email: $('#email').val(),
-        roles: getUserRolesForAdd()
-    }
-    let response =  await fetch('http://localhost:8080/admin', {
-        method: 'POST',
-        headers: {
-            'Content-Type': 'application/json;charset=utf-8'
-        },
-        body: JSON.stringify(newUser)
-    });
-    let addedUser = await response.json();
-    $('#admin-tab').tab('show');
-    $('#tableAllUsers').append(createRows(addedUser));
-}
-
-
-
 </script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/popper.js/1.14.7/umd/popper.min.js"
         integrity="sha384-UO2eT0CpHqdSJQ6hJty5KVphtPhzWj9WO1clHTMGa3JDZwrnQq4sF86dIHNDz0W1"
