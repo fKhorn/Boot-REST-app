@@ -17,7 +17,7 @@
         <a class="navbar-brand" href="#">
             <strong><span th:text="${user.email} "></span></strong>
             with roles:
-            <span th:text=" ${user.roles}"></span>
+            <span id="user-role" th:text=" ${user.roles}"></span>
         </a>
         <ul class="nav navbar-nav navbar-right">
             <li class="nav-item">
@@ -184,6 +184,16 @@
 <script>
     let roleList = [];
     getAllUsers();
+    print();
+
+    function print() {
+        let text = $('#user-role').text().toString();
+        if(text.indexOf('ADMIN')) {
+            $('#user-role').text('ADMIN')
+        } else {
+            $('#user-role').text('USER')
+        }
+    }
 
     function getAllUsers() {
         $('#tableAllUsers').empty();
@@ -202,24 +212,13 @@
     }
 
     function createRows(user) {
-        let user_data = '<tr id=' + user.id + '>';
-        user_data += '<td>' + user.id + '</td>';
-        user_data += '<td>' + user.username + '</td>';
-        user_data += '<td>' + user.email + '</td>';
-        user_data += '<td>';
+        let user_data = `<tr id=${user.id}> <td>${user.id}</td> <td>${user.username}</td> <td>${user.email}</td> <td>`;
         let roles = user.roles;
         for (let userRoles of roles) {
-            user_data += userRoles.role.toString().replace('ROLE_', '') + ' '
+            user_data += userRoles.role.toString().replace('ROLE_', '') + ' ';
         }
-        user_data += '</td>' +
-            '<td>' + '<input id="btnEdit" value="Edit" type="button" ' +
-            'class="btn-info btn edit-btn" data-toggle="modal" data-target="#editModal" ' +
-            'data-id="' + user.id + '">' + '</td>' +
-
-            '<td>' + '<input id="btnDelete" value="Delete" type="button" class="btn btn-danger del-btn" ' +
-            'data-toggle="modal" data-target="#deleteModal" data-id=" ' + user.id + ' ">' + '</td>';
-        user_data += '</tr>';
-
+        user_data += `</td> <td><input id="btnEdit" value="Edit" type="button" class="btn-info btn edit-btn" data-toggle="modal" data-target="#editModal" data-id="${user.id}"></td>
+        <td><input id="btnDelete" value="Delete" type="button" class="btn btn-danger del-btn" data-toggle="modal" data-target="#deleteModal" data-id="${user.id}"></td>`;
         return user_data;
     }
 
