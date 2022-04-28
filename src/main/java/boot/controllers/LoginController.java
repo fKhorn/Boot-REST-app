@@ -5,6 +5,7 @@ import boot.service.RoleService;
 import boot.service.UserService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -41,6 +42,7 @@ public class LoginController {
 
     @GetMapping(value = "/admin")
     public String adminPage(@AuthenticationPrincipal User user, Model model) {
+        System.out.println(SecurityContextHolder.getContext().getAuthentication().getPrincipal());
         model.addAttribute("user", user);
         model.addAttribute("allUsers", userService.getAllUsers());
         model.addAttribute("roles", roleService.getAllRoles());
